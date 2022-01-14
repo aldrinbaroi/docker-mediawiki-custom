@@ -1,0 +1,17 @@
+version: '3'
+networks:
+  apps_network:
+    external: true
+services:
+  mediawiki:
+    image: aldrin/mediawiki
+    restart: always
+    ports: 
+      - 10002:80
+    volumes:
+      - ./var_www_html_images:/var/www/html/images
+      - ./LocalSettings.php:/var/www/html/LocalSettings.php
+    networks:
+    - apps_network
+
+#::END::

@@ -1,0 +1,72 @@
+#!/bin/bash
+
+TABS_URL='https://extdist.wmflabs.org/dist/extensions/Tabs-REL1_37-e8fb792.tar.gz'
+TABS_ZIP='Tabs.tar.gz'
+TABS_EXT_DIR='Tabs'
+
+TABBERNEUE_URL='https://github.com/StarCitizenTools/mediawiki-extensions-TabberNeue/archive/main.zip'
+TABBERNEUE_ZIP='TabberNeue.zip'
+TABBERNEUE_EXT_DIR='TabberNeue'
+
+TREEANDMENU_URL='https://gitlab.com/Aranad/TreeAndMenu/-/archive/master/TreeAndMenu-master.tar.gz'
+TREEANDMENU_ZIP='TreeAndMenu.tar.gz'
+TREEANDMENU_EXT_DIR="TreeAndMenu"
+
+DOCKER_IMAGE_NAME='aldrin/mediawiki'
+
+downloadFile() {
+	local fileName=$1
+	local downloadUrl=$2
+	local sourceDir=$3
+	local targetDir=$4
+	if [[ -f ${fileName} ]]; then
+		echo "Found ${fileName} extension file."
+	else
+		echo "${fileName} extension file not found. Downloading..."
+		wget -q -O $fileName $downloadUrl
+		if (( $? )); then
+			echo "Failed to download extension."
+			echo "Aborting docker image build."
+			exit 1
+		else
+			echo "Downloaded $fileName successfully."
+			extractFile $fileName $sourceDir $targetDir
+		fi
+	fi
+}
+
+extractFile() {
+	local fileName=$1 
+	local sourceDir=$2
+	local targetDir=$3
+	if [[ "$fileName" =~ "tar.gz" ]]; then
+		tar --overwrite -xf $fileName
+	else
+		unzip -q -o $fileName
+	fi
+	if (( $? )); then
+		echo "Failed to extract archive file."
+		echo "Aborting docker image build."
+		exit 1
+	else
+		echo "Extracted $fileName successfully."
+		if [[ ! -z "$sourceDir" ]] && [[ ! -z "$targetDir" ]]; then
+			rm -rf $targetDir
+			mv $sourceDir $targetDir
+		fi
+	fi
+}
+
+clear
+echo "Building docker image"
+echo ""
+downloadFile ${TABS_ZIP} ${TABS_URL}
+downloadFile ${TABBERNEUE_ZIP} ${TABBERNEUE_URL} mediawiki-extensions-TabberNeue-main ${TABBERNEUE_EXT_DIR} 
+downloadFile ${TREEANDMENU_ZIP} ${TREEANDMENU_URL} TreeAndMenu-master ${TREEANDMENU_EXT_DIR}
+echo ""
+
+docker build -t ${DOCKER_IMAGE_NAME} .
+
+#::END::
+
+
