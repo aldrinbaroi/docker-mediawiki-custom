@@ -1,2 +1,6 @@
-# docker-mediawiki-custom
-A customized Docker image for MediaWiki with specific extensions
+# Customized Mediawiki Docker Image
+A customized Docker image for MediaWiki with the following extensions:
+- TreeAndMenu
+- TabberNeue
+- Tabs
+
