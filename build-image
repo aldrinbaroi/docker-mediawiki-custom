@@ -10,46 +10,51 @@ TABBERNEUE_EXT_DIR='TabberNeue'
 
 TREEANDMENU_URL='https://gitlab.com/Aranad/TreeAndMenu/-/archive/master/TreeAndMenu-master.tar.gz'
 TREEANDMENU_ZIP='TreeAndMenu.tar.gz'
-TREEANDMENU_EXT_DIR="TreeAndMenu"
+TREEANDMENU_EXT_DIR='TreeAndMenu'
+
+DISPLAYTITLE_URL='https://github.com/wikimedia/mediawiki-extensions-DisplayTitle/archive/refs/tags/3.1.tar.gz'
+DISPLAYTITLE_ZIP='DisplayTitle.tar.gz'
+DISPLAYTITLE_EXT_DIR='DisplayTitle'
 
 DOCKER_IMAGE_NAME='aldrin/mediawiki'
 
-downloadFile() {
-	local fileName=$1
+downloadArchive() {
+	local archiveFileName=$1
 	local downloadUrl=$2
-	local sourceDir=$3
-	local targetDir=$4
-	if [[ -f ${fileName} ]]; then
-		echo "Found ${fileName} extension file."
+	local targetDir=$3
+	if [[ -f ${archiveFileName} ]]; then
+		echo "Found ${archiveFileName} extension file."
 	else
-		echo "${fileName} extension file not found. Downloading..."
-		wget -q -O $fileName $downloadUrl
+		echo "${archiveFileName} extension file not found. Downloading..."
+		wget -q -O $archiveFileName $downloadUrl
 		if (( $? )); then
 			echo "Failed to download extension."
 			echo "Aborting docker image build."
 			exit 1
 		else
-			echo "Downloaded $fileName successfully."
-			extractFile $fileName $sourceDir $targetDir
+			echo "Downloaded $archiveFileName successfully."
+			extractArchive $archiveFileName $targetDir
 		fi
 	fi
 }
 
-extractFile() {
-	local fileName=$1 
-	local sourceDir=$2
-	local targetDir=$3
-	if [[ "$fileName" =~ "tar.gz" ]]; then
-		tar --overwrite -xf $fileName
+extractArchive() {
+	local archiveFileName=$1 
+	local targetDir=$2
+	local sourceDir=""
+	if [[ "$archiveFileName" =~ "tar.gz" ]]; then
+                sourceDir=$(tar tzf $archiveFileName | sed -e 's@/.*@@' | uniq)
+		tar --overwrite -xf $archiveFileName
 	else
-		unzip -q -o $fileName
+		sourceDir=$(unzip -qql $archiveFileName | awk '{print $4}' | sed -e 's@/.*@@' | uniq)
+		unzip -q -o $archiveFileName
 	fi
 	if (( $? )); then
 		echo "Failed to extract archive file."
 		echo "Aborting docker image build."
 		exit 1
 	else
-		echo "Extracted $fileName successfully."
+		echo "Extracted $archiveFileName successfully."
 		if [[ ! -z "$sourceDir" ]] && [[ ! -z "$targetDir" ]]; then
 			rm -rf $targetDir
 			mv $sourceDir $targetDir
@@ -60,9 +65,10 @@ extractFile() {
 clear
 echo "Building docker image"
 echo ""
-downloadFile ${TABS_ZIP} ${TABS_URL}
-downloadFile ${TABBERNEUE_ZIP} ${TABBERNEUE_URL} mediawiki-extensions-TabberNeue-main ${TABBERNEUE_EXT_DIR} 
-downloadFile ${TREEANDMENU_ZIP} ${TREEANDMENU_URL} TreeAndMenu-master ${TREEANDMENU_EXT_DIR}
+downloadArchive ${TABS_ZIP} ${TABS_URL}
+downloadArchive ${TABBERNEUE_ZIP} ${TABBERNEUE_URL} ${TABBERNEUE_EXT_DIR} 
+downloadArchive ${TREEANDMENU_ZIP} ${TREEANDMENU_URL} ${TREEANDMENU_EXT_DIR}
+downloadArchive ${DISPLAYTITLE_ZIP} ${DISPLAYTITLE_URL} ${DISPLAYTITLE_EXT_DIR}
 echo ""
 
 docker build -t ${DOCKER_IMAGE_NAME} .
