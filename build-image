@@ -45,9 +45,13 @@ extractArchive() {
 	if [[ "$archiveFileName" =~ "tar.gz" ]]; then
                 sourceDir=$(tar tzf $archiveFileName | sed -e 's@/.*@@' | uniq)
 		tar --overwrite -xf $archiveFileName
-	else
+	elif [[ "$archiveFileName" =~ ".zip" ]]; then
 		sourceDir=$(unzip -qql $archiveFileName | awk '{print $4}' | sed -e 's@/.*@@' | uniq)
 		unzip -q -o $archiveFileName
+	else
+		echo "Unknown archive file type.  Unable to extract."
+		echo "Aborting docker image build."
+		exit 1
 	fi
 	if (( $? )); then
 		echo "Failed to extract archive file."
